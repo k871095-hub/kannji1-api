@@ -30,6 +30,8 @@
     #screen-home { align-items: center; justify-content: center; }
     .title { font-size: 36px; color: #d97706; margin-bottom: 40px; font-weight: bold; }
     .btn-group { width: 240px; display: flex; flex-direction: column; gap: 15px; }
+    .home-sub-row { display: flex; gap: 10px; width: 100%; }
+    .home-sub-row button { flex: 1; }
 
     /* ② 漢字選択画面 */
     #screen-list { max-width: 1100px; margin: 0 auto; height: 100vh; justify-content: space-between; padding-bottom: 10px; }
@@ -65,7 +67,7 @@
     .btn-tool { padding: 8px 16px; font-size: 14px; font-weight: bold; border: 2px solid #cbd5e1; background-color: white; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
     .btn-tool.active { background-color: #3b82f6; color: white; border-color: #2563eb; }
 
-    /* 下部パネル：6回用（3列×2段） */
+    /* 下部パネル：6回用 */
     .bottom-panel { height: 60vh; background-color: rgba(241, 245, 249, 0.6); border-radius: 16px; padding: 12px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
     .grid-cells { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 12px; width: 100%; height: 100%; }
     
@@ -81,6 +83,25 @@
     .footer-area { height: 8vh; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
     #btn-next { width: 100%; max-width: 450px; background-color: #10b981; color: white; font-weight: bold; padding: 10px; border-radius: 30px; font-size: 20px; border: none; cursor: pointer; box-shadow: 0 10px 15px rgba(16,185,129,0.3); display: none; }
     #text-guide { font-size: 15px; color: #94a3b8; margin: 0; font-weight: bold; }
+
+    /* ④ りれき一覧画面 */
+    #screen-history-gallery { max-width: 1000px; margin: 0 auto; height: 100vh; display: none; padding: 20px; box-sizing: border-box; }
+    .gallery-header { display: flex; align-items: center; justify-content: space-between; height: 10vh; margin-bottom: 10px; }
+    .gallery-title { font-size: 26px; color: #b45309; font-weight: bold; margin: 0; }
+    .gallery-scroll { height: 85vh; overflow-y: auto; background-color: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-sizing: border-box; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .gallery-item { border: 2px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #fff; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; position: relative; }
+    .gallery-item:active { transform: scale(0.95); }
+    .gallery-item img { width: 100%; height: auto; display: block; }
+    .gallery-item-label { background-color: #f1f5f9; text-align: center; padding: 5px; font-weight: bold; font-size: 14px; color: #475569; border-top: 1px solid #cbd5e1; }
+    .gallery-empty { text-align: center; color: #94a3b8; font-size: 18px; font-weight: bold; margin-top: 100px; }
+
+    /* りれき全画面拡大オーバーレイ */
+    .overlay { display: none; position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.85); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+    .overlay-content { max-width: 90vw; max-height: 85vh; background-color: white; border-radius: 20px; padding: 15px; box-sizing: border-box; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; display: flex; flex-direction: column; align-items: center; }
+    .overlay-content img { max-width: 100%; max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 10px; }
+    .overlay-close { position: absolute; top: -20px; right: -20px; background-color: #ef4444; color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 24px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+    .overlay-label { margin-top: 12px; font-size: 20px; font-weight: bold; color: #1e293b; }
   </style>
 </head>
 <body>
@@ -89,7 +110,10 @@
     <h1 class="title">かんじ れんしゅう あぷり</h1>
     <div class="btn-group">
       <button class="btn-main" onclick="goToTransit()">スタート 🚀</button>
-      <button class="btn-sub">せってい ⚙️</button>
+      <div class="home-sub-row">
+        <button class="btn-sub" onclick="openHistoryGallery()">りれき 📷</button>
+        <button class="btn-sub">せってい ⚙️</button>
+      </div>
     </div>
   </div>
 
@@ -140,8 +164,27 @@
     </div>
 
     <div class="footer-area">
-      <button id="btn-next" onclick="nextKanji()">つぎの かんじへ ➡️</button>
+      <button id="btn-next" onclick="captureAndNextKanji()">つぎの かんじへ ➡️</button>
       <p id="text-guide">6この ます ぜんぶに かいてみよう！</p>
+    </div>
+  </div>
+
+  <div id="screen-history-gallery" class="screen">
+    <div class="gallery-header">
+      <button class="btn-sub" onclick="changeScreen('HOME')" style="padding: 10px 20px;">🏠 ホームにもどる</button>
+      <h2 class="gallery-title">れんしゅうの りれき 📷</h2>
+      <button class="btn-action clear" onclick="clearHistoryGallery()" style="padding: 10px 20px; border-radius: 12px;">りれきを消す</button>
+    </div>
+    <div class="gallery-scroll">
+      <div class="gallery-grid" id="gallery-items-grid"></div>
+    </div>
+  </div>
+
+  <div id="gallery-overlay" class="overlay" onclick="closeOverlay()">
+    <div class="overlay-content" onclick="event.stopPropagation()">
+      <button class="overlay-close" onclick="closeOverlay()">❌</button>
+      <img id="overlay-img" src="" alt="拡大表示">
+      <div id="overlay-label" class="overlay-label">漢字の名前</div>
     </div>
   </div>
 
@@ -210,6 +253,9 @@
     let isSpeakLocked = false;
 
     let strokeHistories = [[], [], [], [], [], []];
+    
+    // 【新機能配備】アプリ内メモリに練習結果画像を一時保存する配列
+    let savedHistories = [];
 
     function handleTripleTap(buttonElement, callback) {
       tapCount++;
@@ -235,13 +281,14 @@
     }
 
     function changeScreen(phase) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      if(phase === 'HOME') document.getElementById('screen-home').classList.add('active');
+      document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+      if(phase === 'HOME') document.getElementById('screen-home').style.display = 'flex';
       if(phase === 'KANJI_LIST') {
-        document.getElementById('screen-list').classList.add('active');
+        document.getElementById('screen-list').style.display = 'flex';
         renderKanjiList();
       }
-      if(phase === 'PRACTICE') document.getElementById('screen-practice').classList.add('active');
+      if(phase === 'PRACTICE') document.getElementById('screen-practice').style.display = 'flex';
+      if(phase === 'HISTORY_GALLERY') document.getElementById('screen-history-gallery').style.display = 'flex';
     }
 
     function goToTransit() {
@@ -506,22 +553,143 @@
       }
     }
 
+    // 【新変更】次の文字へいく前に、6個のマスと文字の情報を「スクショ風」に合体撮影する
+    function captureAndNextKanji() {
+      const currentKanji = UNIQUE_KANJI_DATA.find(k => k.id === selectedIds[currentIndex]);
+      
+      // スクショ風画像を組み立てるための隠しキャンバスをメモリ上に作成
+      const virtualCanvas = document.createElement('canvas');
+      virtualCanvas.width = 600;
+      virtualCanvas.height = 450;
+      const vCtx = virtualCanvas.getContext('2d');
+
+      // 背景を真っ白に塗る
+      vCtx.fillStyle = '#ffffff';
+      vCtx.fillRect(0, 0, 600, 450);
+
+      // 上部に漢字の名前と読み方を記録
+      vCtx.fillStyle = '#b45309';
+      vCtx.font = 'bold 28px sans-serif';
+      vCtx.fillText(`「${currentKanji.char}」の れんしゅう`, 30, 45);
+
+      vCtx.fillStyle = '#64748b';
+      vCtx.font = '18px sans-serif';
+      vCtx.fillText(`よみかた: ${currentKanji.reading}`, 350, 42);
+
+      // 区切り線
+      vCtx.strokeStyle = '#e2e8f0';
+      vCtx.lineWidth = 2;
+      vCtx.beginPath(); vCtx.moveTo(20, 65); vCtx.lineTo(580, 65); vCtx.stroke();
+
+      // 6個のマスのキャンバス画像を取得して、きれいに2行3列に並べてコピペ（合成）する
+      for (let i = 0; i < 6; i++) {
+        const originalCanvas = document.getElementById(`canvas-${i}`);
+        if (originalCanvas) {
+          // マスの位置計算 (横3マス、縦2マス)
+          const col = i % 3;
+          const row = Math.floor(i / 3);
+          const x = 30 + col * 190;
+          const y = 90 + row * 170;
+
+          // 各マスのうしろの白い枠線を描く
+          vCtx.strokeStyle = '#cbd5e1';
+          vCtx.lineWidth = 1;
+          vCtx.strokeRect(x, y, 160, 160);
+
+          // マス目の数字
+          vCtx.fillStyle = '#94a3b8';
+          vCtx.font = 'bold 14px sans-serif';
+          vCtx.fillText(i + 1, x + 8, y + 18);
+
+          // なぞり書き用の薄い背景文字を再現 (1,2,3,4マス目のみ)
+          if (MODES[i] !== 'blank') {
+            vCtx.fillStyle = '#e2e8f0';
+            vCtx.font = '110px serif';
+            vCtx.textAlign = 'center';
+            vCtx.textBaseline = 'middle';
+            vCtx.fillText(currentKanji.char, x + 80, y + 80);
+            vCtx.textAlign = 'left'; vCtx.textBaseline = 'alphabetic'; // 元に戻す
+          }
+
+          // 十字の点線ガイド線
+          vCtx.strokeStyle = '#f1f5f9';
+          vCtx.setLineDash([4, 4]);
+          vCtx.beginPath(); vCtx.moveTo(x + 80, y); vCtx.lineTo(x + 80, y + 160); vCtx.stroke();
+          vCtx.beginPath(); vCtx.moveTo(x, y + 80); vCtx.lineTo(x + 160, y + 80); vCtx.stroke();
+          vCtx.setLineDash([]); // 元に戻す
+
+          // お子様が書いた筆跡（実体canvas）を上から重ねて撮影
+          vCtx.drawImage(originalCanvas, x, y);
+        }
+      }
+
+      // 完成した画像をデータ（URL文字列）に変換して配列に保存
+      const imgDataUrl = virtualCanvas.toDataURL('image/png');
+      savedHistories.unshift({
+        char: currentKanji.char,
+        reading: currentKanji.reading,
+        imageSrc: imgDataUrl,
+        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // 次の漢字に進む
+      nextKanji();
+    }
+
     function nextKanji() {
       if (currentIndex < selectedIds.length - 1) {
         currentIndex++;
         initPracticePage();
       } else {
         alert('ぜんぶクリア！よくがんばったね！💮');
-        // 全部おわった時用の完全リセット関数を呼び出す
         exitAndResetKanji();
         changeScreen('KANJI_LIST');
       }
     }
 
-    // 【新機能】データの中身とボタンの見た目の両方を安全にゼロにする関数
     function exitAndResetKanji() {
       selectedIds = [];
       updateStartButtonState();
+    }
+
+    /* 【新機能】 りれきギャラリーコントロール */
+    function openHistoryGallery() {
+      changeScreen('HISTORY_GALLERY');
+      const grid = document.getElementById('gallery-items-grid');
+      grid.innerHTML = '';
+
+      if (savedHistories.length === 0) {
+        grid.innerHTML = `<div class="gallery-empty">まだ練習の履歴がありません。<br>練習が終わるとここに自動で保存されるよ！✨</div>`;
+        return;
+      }
+
+      savedHistories.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'gallery-item';
+        itemDiv.onclick = () => openOverlay(item);
+        itemDiv.innerHTML = `
+          <img src="${item.imageSrc}" alt="${item.char}">
+          <div class="gallery-item-label">${item.char} (${item.time})</div>
+        `;
+        grid.appendChild(itemDiv);
+      });
+    }
+
+    function clearHistoryGallery() {
+      if (confirm('これまで練習したりれきをぜんぶ消してもいいですか？')) {
+        savedHistories = [];
+        openHistoryGallery();
+      }
+    }
+
+    function openOverlay(item) {
+      document.getElementById('overlay-img').src = item.imageSrc;
+      document.getElementById('overlay-label').innerText = `「${item.char}」（よみ: ${item.reading}）の練習結果`;
+      document.getElementById('gallery-overlay').style.display = 'flex';
+    }
+
+    function closeOverlay() {
+      document.getElementById('gallery-overlay').style.display = 'none';
     }
 
     let longTapTimer = null;
@@ -531,7 +699,6 @@
       if (e.target.tagName === 'CANVAS' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
         return;
       }
-      
       clearTimeout(longTapTimer);
       longTapTimer = setTimeout(() => {
         undoLastStrokeGlobal();
@@ -544,18 +711,15 @@
 
     function undoLastStrokeGlobal() {
       let targetCellIdx = -1;
-
       for (let i = 0; i < 6; i++) {
         if (strokeHistories[i].length > 0) {
           targetCellIdx = i;
         }
       }
-
       if (targetCellIdx !== -1) {
         strokeHistories[targetCellIdx].pop();
         redrawCanvas(targetCellIdx);
         checkWritten(targetCellIdx);
-        
         if (navigator.vibrate) navigator.vibrate(50);
       }
     }
