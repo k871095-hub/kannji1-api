@@ -34,8 +34,8 @@
     .home-sub-row button { flex: 1; }
     
     /* ホーム画面専用の個別ボタン色指定 */
-    .btn-home-history { background-color: #ef4444 !important; } /* 赤色に変身 */
-    .btn-home-settings { background-color: #3b82f6 !important; } /* 青色に変身 */
+    .btn-home-history { background-color: #ef4444 !important; }
+    .btn-home-settings { background-color: #3b82f6 !important; }
 
     /* ② 漢字選択画面 */
     #screen-list { max-width: 1100px; margin: 0 auto; height: 100vh; justify-content: space-between; padding-bottom: 10px; }
@@ -116,7 +116,7 @@
       <button class="btn-main" onclick="goToTransit()">スタート 🚀</button>
       <div class="home-sub-row">
         <button class="btn-sub btn-home-history" onclick="openHistoryGallery()">りれき 📷</button>
-        <button class="btn-sub btn-home-settings()">せってい ⚙️</button>
+        <button class="btn-sub btn-home-settings">せってい ⚙️</button>
       </div>
     </div>
   </div>
@@ -206,7 +206,7 @@
       { id: '19', char: '金', reading: 'かね', genre: '数・曜日' }, { id: '20', char: '土', reading: 'つち', genre: '数・曜日' },
       { id: '21', char: '山', reading: 'やま', genre: '自然' }, { id: '22', char: '川', reading: 'かわ', genre: '自然' },
       { id: '23', char: '石', reading: 'いし', genre: '自然' }, { id: '24', char: '竹', reading: 'たけ', genre: '自然' },
-      { id: '25', char: '田', reading: 'たんぼ', genre: '自然' }, { id: '26', char: '花', reading: 'はna', genre: '自然' },
+      { id: '25', char: '田', reading: 'たんぼ', genre: '自然' }, { id: '26', char: '花', reading: 'はな', genre: '自然' },
       { id: '27', char: '草', reading: 'くさ', genre: '自然' }, { id: '28', char: '林', reading: 'はやし', genre: '自然' },
       { id: '29', char: '森', reading: 'もり', genre: '自然' }, { id: '30', char: '天', reading: 'てんき', genre: '自然' },
       { id: '31', char: '空', reading: 'そら', genre: '自然' }, { id: '32', char: '雨', reading: 'あめ', genre: '自然' },
@@ -247,6 +247,7 @@
     
     const GENRES = ['数・曜日', '自然', '向き', '色', '大きさ', '体の部位', 'その他'];
     const MODES = ['trace','trace','fade-on-touch','fade-on-touch','blank','blank'];
+    const MAX_HISTORY_COUNT = 50; // 最大保存枚数ルール
     
     let selectedIds = [];
     let currentIndex = 0;
@@ -255,9 +256,27 @@
     let tapCount = 0;
     let tapTimer = null;
     let isSpeakLocked = false;
-
     let strokeHistories = [[], [], [], [], [], []];
+    
+    // 【LocalStorage対応】起動時にブラウザから保存済みの履歴を読み込む
     let savedHistories = [];
+    try {
+      const localData = localStorage.getItem('kanji_practice_history');
+      if (localData) {
+        savedHistories = JSON.parse(localData);
+      }
+    } catch(e) {
+      console.error('履歴の読み込みに失敗しました:', e);
+    }
+
+    // 履歴をLocalStorageへ保存する共通処理
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('kanji_practice_history', JSON.stringify(savedHistories));
+      } catch(e) {
+        console.error('容量制限などの理由で保存できませんでした:', e);
+      }
+    }
 
     function handleTripleTap(buttonElement, callback) {
       tapCount++;
@@ -619,6 +638,7 @@
       const dateString = `${now.getMonth() + 1}月${now.getDate()}日`;
       const timeString = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
+      // 新しい履歴を先頭に追加
       savedHistories.unshift({
         char: currentKanji.char,
         reading: currentKanji.reading,
@@ -626,6 +646,14 @@
         dateLabel: dateString,
         timeLabel: timeString
       });
+
+      // 【新ルール】もし50枚を超えたら、一番古い履歴（配列の最後尾）を削除して上限を保つ
+      if (savedHistories.length > MAX_HISTORY_COUNT) {
+        savedHistories = savedHistories.slice(0, MAX_HISTORY_COUNT);
+      }
+
+      // ローカルストレージにデータを永久保存
+      saveToLocalStorage();
 
       nextKanji();
     }
@@ -671,6 +699,7 @@
     function clearHistoryGallery() {
       if (confirm('これまで練習したりれきをぜんぶ消してもいいですか？')) {
         savedHistories = [];
+        saveToLocalStorage(); // ローカルストレージも空にする
         openHistoryGallery();
       }
     }
